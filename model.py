@@ -1,77 +1,58 @@
 import requests
+from abc import ABC, abstractmethod
 
 class Model():
 
     def __init__(self):
-        self.baseCurrency = "EUR"
-        self.amount = 0
-        self.targetCurrency = None
+        self.strategy = Offline()
 
-    def req(self, currencies):
-        payload = {'access_key': 'latest'}
-        r = requests.get(f"http://api.exchangeratesapi.io/v1/latest?access_key=f9f271f121e28cbe28ffbc52b2bfa215&symbols={currencies}")
-        if r.status_code != 200:
-            print(r.status_code)
-            print(r.json())
-            raise Exception(r.json()['error']['message'])
-        return r.json()
+    def convertC(self, baseC, targetC, amount):
+        c = self.strategy.getData()
+        base = 1/c["rates"][baseC]
+        l = []
+        for t in targetC:
+            r=c["rates"][t]*base
+            l.append((r*amount,t,r))
+        l.append(c["date"])
+        print(l)
+        return l
 
-    def convertCurrency(self):
-        result = []
-        try:
-            target = self.req(self.targetCurrency)
-            base = self.req(self.baseCurrency)['rates']
-            base = 1/base[next(iter(base.keys()))]
-            print(base)
-            print(type(base))
-            for key, value in target["rates"].items():
-                result.append(f"{(value*base*self.amount)} {key}")
-            return result
-        except Exception as e:
-            raise e
+    def getCurrencies(self):
+        c = self.strategy.getData()
+        return c["rates"].keys()
 
-    def getRates(self):
-        result = []
-        base = self.req(self.baseCurrency)['rates']
-        base = 1/base[next(iter(base.keys()))]
-        try:
-            for item in self.req(self.targetCurrency)["rates"].items():
-                result.append(item[1]*base)
-            return result
-        except Exception as e:
-            raise e
+    def setStrategy(self, s):
+        self.strategy = s
 
-    def getDate(self):
-        try:
-            return self.req(self.targetCurrency)['date']
-        except Exception as e:
-            raise e
+class Strategy(ABC):
+    @abstractmethod
+    def getData(self):
+        pass
 
-    def reset(self):
-        self.baseCurrency = ""
-        self.amount = 0
-        self.targetCurrency = None
+class Live(Strategy):
+    def getData(self):
+        c = requests.get("http://api.exchangeratesapi.io/v1/latest?access_key=f9f271f121e28cbe28ffbc52b2bfa215")
+        if c.status_code != 200:
+            print(c.status_code)
+            print(c.json())
+            raise Exception(c.json()['error']['message'])
+        return c.json()
 
+class Offline(Strategy):
+    def getData(self):
+        d = {'success': True, 'timestamp': 1055289599, 'historical': True, 'base': 'EUR', 'date': '2003-06-10', 'rates': {'AED': 4.291826, 'ALL': 136.834083, 'AMD': 654.940632, 'ANG': 2.091886, 'ARS': 3.316402, 'AUD': 1.777385, 'AWG': 2.091886, 'BBD': 2.337303, 'BDT': 68.643915, 'BGN': 1.949083, 'BHD': 0.439997, 'BIF': 1249.740383, 'BMD': 1.168652, 'BND': 2.02263, 'BOB': 8.939311, 'BRL': 3.367394, 'BSD': 1.168652, 'BTN': 54.586016, 'BWP': 6.069862, 'BYR': 2403.516507, 'BZD': 2.337303, 'CAD': 1.590793, 'CDF': 470.962706, 'CHF': 1.539624, 'CLP': 840.310822, 'CNY': 9.671462, 'COP': 3311.935316, 'CRC': 466.294296, 'CVE': 110.144341, 'CZK': 31.26554, 'DJF': 207.693935, 'DKK': 7.416297, 'DOP': 29.315154, 'DZD': 92.338702, 'EGP': 6.993169, 'ETB': 9.916968, 'EUR': 1, 'FJD': 2.202208, 'FKP': 0.706682, 'GBP': 0.706837, 'GEL': 2.520801, 'GIP': 0.705499, 'GMD': 29.514724, 'GNF': 2318.013944, 'GTQ': 9.356169, 'GYD': 211.319758, 'HKD': 9.114217, 'HNL': 20.366101, 'HRK': 7.538679, 'HTG': 43.981299, 'HUF': 259.267493, 'IDR': 9616.131681, 'ILS': 5.164464, 'INR': 54.63392, 'IQD': 3633.6768, 'IRR': 9384.773242, 'ISK': 85.558605, 'JMD': 69.067381, 'JOD': 0.828574, 'JPY': 137.747155, 'KES': 86.524201, 'KGS': 52.011744, 'KHR': 4501.432565, 'KMF': 491.44303, 'KPW': 2.571223, 'KRW': 1395.082944, 'KWD': 0.3496, 'KZT': 178.86308, 'LAK': 12318.715465, 'LBP': 1775.00353, 'LKR': 114.266242, 'LSL': 9.312334, 'LTL': 3.449016, 'LVL': 0.656298, 'LYD': 1.418719, 'MAD': 10.894063, 'MDL': 16.565909, 'MKD': 61.298919, 'MMK': 7.025692, 'MNT': 1323.095935, 'MOP': 9.387178, 'MRO': 308.377909, 'MUR': 31.877015, 'MVR': 13.75503, 'MWK': 108.615739, 'MXN': 12.484814, 'MYR': 4.441067, 'NAD': 9.306387, 'NGN': 159.380574, 'NIO': 17.214208, 'NOK': 8.208534, 'NPR': 88.347184, 'NZD': 2.033515, 'OMR': 0.449343, 'PAB': 1.168652, 'PEN': 4.102301, 'PGK': 4.262055, 'PHP': 62.491661, 'PKR': 67.719178, 'PLN': 4.458238, 'PYG': 7555.837952, 'QAR': 4.253892, 'RON': 3.806262, 'RUB': 35.728465, 'RWF': 614.374139, 'SAR': 4.382169, 'SBD': 8.66913, 'SCR': 6.63243, 'SEK': 9.108032, 'SGD': 2.022363, 'SHP': 0.706682, 'SLL': 2687.319051, 'SOS': 3094.70303, 'STD': 10626.584274, 'SVC': 10.226226, 'SYP': 54.564427, 'SZL': 9.30059, 'THB': 48.807927, 'TJS': 3.637272, 'TND': 1.480928, 'TOP': 2.539332, 'TRY': 1.670238, 'TTD': 7.304657, 'TWD': 40.586623, 'TZS': 1228.048667, 'UAH': 6.23517, 'UGX': 2344.558168, 'USD': 1.168652, 'UZS': 1140.777087, 'VEF': 1.877858, 'VND': 18324.163587, 'VUV': 142.446125, 'WST': 3.592616, 'XAF': 655.986781, 'XCD': 3.151822, 'XDR': 0.825744, 'XOF': 655.25704, 'XPF': 119.204363, 'YER': 210.147408, 'ZAR': 9.335246, 'ZMK': 5618.286174}}
+        return d
 
-    def setTargetCurrency(self, tG):
-        self.targetCurrency = tG
-
-    def setBaseCurrency(self, bC):
-        self.baseCurrency = bC
-
-    def setAmount(self, a):
-        self.amount = a
 
 
 if __name__ == "__main__":
     m = Model()
-    m.setTargetCurrency("USD, EUR, CHF, AED")
-    try:
-        m.setBaseCurrency("PLN++")
-        print(m.baseCurrency)
-        print(m.req(m.baseCurrency))
-        print(m.convertCurrency())
-        #print(m.getDate())
-        #print(m.getRates())
-    except Exception as e:
-        print(e)
+    m.convertC("USD", ["PLN", "CAD"], 10)
+    #m.setBaseCurrency("USD")
+    #m.setTargetCurrency("PLN, CAD")
+    #m.convertCurrency()
+    #print(m.getRates())
+    #d = {'success': True, 'timestamp': 1055289599, 'historical': True, 'base': 'EUR', 'date': '2003-06-10', 'rates': {'AED': 4.291826, 'ALL': 136.834083, 'AMD': 654.940632, 'ANG': 2.091886, 'ARS': 3.316402, 'AUD': 1.777385, 'AWG': 2.091886, 'BBD': 2.337303, 'BDT': 68.643915, 'BGN': 1.949083, 'BHD': 0.439997, 'BIF': 1249.740383, 'BMD': 1.168652, 'BND': 2.02263, 'BOB': 8.939311, 'BRL': 3.367394, 'BSD': 1.168652, 'BTN': 54.586016, 'BWP': 6.069862, 'BYR': 2403.516507, 'BZD': 2.337303, 'CAD': 1.590793, 'CDF': 470.962706, 'CHF': 1.539624, 'CLP': 840.310822, 'CNY': 9.671462, 'COP': 3311.935316, 'CRC': 466.294296, 'CVE': 110.144341, 'CZK': 31.26554, 'DJF': 207.693935, 'DKK': 7.416297, 'DOP': 29.315154, 'DZD': 92.338702, 'EGP': 6.993169, 'ETB': 9.916968, 'EUR': 1, 'FJD': 2.202208, 'FKP': 0.706682, 'GBP': 0.706837, 'GEL': 2.520801, 'GIP': 0.705499, 'GMD': 29.514724, 'GNF': 2318.013944, 'GTQ': 9.356169, 'GYD': 211.319758, 'HKD': 9.114217, 'HNL': 20.366101, 'HRK': 7.538679, 'HTG': 43.981299, 'HUF': 259.267493, 'IDR': 9616.131681, 'ILS': 5.164464, 'INR': 54.63392, 'IQD': 3633.6768, 'IRR': 9384.773242, 'ISK': 85.558605, 'JMD': 69.067381, 'JOD': 0.828574, 'JPY': 137.747155, 'KES': 86.524201, 'KGS': 52.011744, 'KHR': 4501.432565, 'KMF': 491.44303, 'KPW': 2.571223, 'KRW': 1395.082944, 'KWD': 0.3496, 'KZT': 178.86308, 'LAK': 12318.715465, 'LBP': 1775.00353, 'LKR': 114.266242, 'LSL': 9.312334, 'LTL': 3.449016, 'LVL': 0.656298, 'LYD': 1.418719, 'MAD': 10.894063, 'MDL': 16.565909, 'MKD': 61.298919, 'MMK': 7.025692, 'MNT': 1323.095935, 'MOP': 9.387178, 'MRO': 308.377909, 'MUR': 31.877015, 'MVR': 13.75503, 'MWK': 108.615739, 'MXN': 12.484814, 'MYR': 4.441067, 'NAD': 9.306387, 'NGN': 159.380574, 'NIO': 17.214208, 'NOK': 8.208534, 'NPR': 88.347184, 'NZD': 2.033515, 'OMR': 0.449343, 'PAB': 1.168652, 'PEN': 4.102301, 'PGK': 4.262055, 'PHP': 62.491661, 'PKR': 67.719178, 'PLN': 4.458238, 'PYG': 7555.837952, 'QAR': 4.253892, 'RON': 3.806262, 'RUB': 35.728465, 'RWF': 614.374139, 'SAR': 4.382169, 'SBD': 8.66913, 'SCR': 6.63243, 'SEK': 9.108032, 'SGD': 2.022363, 'SHP': 0.706682, 'SLL': 2687.319051, 'SOS': 3094.70303, 'STD': 10626.584274, 'SVC': 10.226226, 'SYP': 54.564427, 'SZL': 9.30059, 'THB': 48.807927, 'TJS': 3.637272, 'TND': 1.480928, 'TOP': 2.539332, 'TRY': 1.670238, 'TTD': 7.304657, 'TWD': 40.586623, 'TZS': 1228.048667, 'UAH': 6.23517, 'UGX': 2344.558168, 'USD': 1.168652, 'UZS': 1140.777087, 'VEF': 1.877858, 'VND': 18324.163587, 'VUV': 142.446125, 'WST': 3.592616, 'XAF': 655.986781, 'XCD': 3.151822, 'XDR': 0.825744, 'XOF': 655.25704, 'XPF': 119.204363, 'YER': 210.147408, 'ZAR': 9.335246, 'ZMK': 5618.286174}}
+    #print(d)
+    #print(type(d))
+

@@ -35,26 +35,30 @@
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="lineEdit_2"/>
+       <widget class="QComboBox" name="baseC"/>
       </item>
       <item>
-       <widget class="QLabel" name="label_3">
+       <widget class="QCheckBox" name="isLive">
         <property name="text">
-         <string>Zielwährungen:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="lineEdit_3"/>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pB_calc">
-        <property name="text">
-         <string>Umrechnen</string>
+         <string>Live-Daten</string>
         </property>
        </widget>
       </item>
      </layout>
+    </item>
+    <item>
+     <widget class="QLabel" name="label_3">
+      <property name="text">
+       <string>Zielwährungen:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QListWidget" name="targetC">
+      <property name="selectionMode">
+       <enum>QAbstractItemView::MultiSelection</enum>
+      </property>
+     </widget>
     </item>
     <item>
      <widget class="QTextBrowser" name="textBrowser"/>
@@ -72,6 +76,13 @@
        <widget class="QPushButton" name="pb_reset">
         <property name="text">
          <string>Zurücksetzen</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pB_calc">
+        <property name="text">
+         <string>Umrechnen</string>
         </property>
        </widget>
       </item>
